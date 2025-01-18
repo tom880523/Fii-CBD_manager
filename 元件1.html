@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fii-CBD元件庫管理系統</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            background-color: #333;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        nav {
+            background-color: #f1f1f1;
+            padding: 0.5rem;
+        }
+        nav a {
+            color: #333;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+        }
+        nav a:hover {
+            background-color: #ddd;
+        }
+        main {
+            flex: 1;
+            padding: 1rem;
+        }
+        .section {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            margin-top: auto;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 1rem;
+        }
+        .stats div {
+            background-color: #f2f2f2;
+            padding: 1rem;
+            border-radius: 5px;
+        }
+        form {
+            margin-bottom: 1rem;
+        }
+        input, select, button {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Fii-CBD元件庫管理系統</h1>
+    </header>
+    <nav>
+        <a href="#" data-section="home">首頁</a>
+        <a href="#" data-section="components">元件庫</a>
+        <a href="#" data-section="borrow">借出/歸還</a>
+        <a href="#" data-section="reports">報表</a>
+        <a href="#" data-section="admin">管理介面</a>
+    </nav>
+    <main>
+        <section id="home" class="section active">
+            <h2>儀表板</h2>
+            <div class="stats">
+                <div>總元件數量: <span id="totalComponents">0</span></div>
+                <div>總借出數量: <span id="currentlyBorrowed">0</span></div>
+                <div>待歸還數量: <span id="pendingReturn">0</span></div>
+                <div>活躍用戶數: <span id="activeUsers">0</span></div>
+            </div>
+            <h3>最近活動</h3>
+            <ul id="recentActivities"></ul>
+        </section>
+        <section id="components" class="section">
+            <h2>元件庫</h2>
+            <table id="componentsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>名稱</th>
+                        <th>總數量</th>
+                        <th>可用數量</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+        <section id="borrow" class="section">
+            <h2>借出/歸還</h2>
+            <form id="borrowForm">
+                <input type="text" id="borrower" placeholder="借用人" required>
+                <select id="componentSelect" required></select>
+                <input type="number" id="quantity" placeholder="數量" required>
+                <button type="submit">借出</button>
+            </form>
+            <h3>待歸還項目</h3>
+            <table id="borrowedItemsTable">
+                <thead>
+                    <tr>
+                        <th>借用人</th>
+                        <th>元件</th>
+                        <th>數量</th>
+                        <th>借出日期</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+        <section id="reports" class="section">
+            <h2>報表</h2>
+            <div id="reportContent"></div>
+        </section>
+        <section id="admin" class="section">
+            <h2>管理介面</h2>
+            <form id="addComponentForm">
+                <input type="text" id="componentName" placeholder="元件名稱" required>
+                <input type="number" id="componentQuantity" placeholder="數量" required>
+                <button type="submit">添加元件</button>
+            </form>
+            <table id="adminComponentsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>名稱</th>
+                        <th>總數量</th>
+                        <th>可用數量</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+    </main>
+    <footer>
+        <p>© 2024 元件庫管理系統. 版權所有。</p>
+    </footer>
+
+    <script>
+        // 使用 localStorage 模擬數據存儲
+        if (!localStorage.getItem('components')) {
+            localStorage.setItem('components', JSON.stringify([]));
+        }
+        if (!localStorage.getItem('borrowedItems')) {
+            localStorage.setItem('borrowedItems', JSON.stringify([]));
+        }
+
+        // 獲取數據
+        function getComponents() {
+            return JSON.parse(localStorage.getItem('components'));
+        }
+
+        function getBorrowedItems() {
+            return JSON.parse(localStorage.getItem('borrowedItems'));
+        }
+
+        // 保存數據
+        function saveComponents(components) {
+            localStorage.setItem('components', JSON.stringify(components));
+        }
+
+        function saveBorrowedItems(borrowedItems) {
+            localStorage.setItem('borrowedItems', JSON.stringify(borrowedItems));
+        }
+
+        // 更新統計信息
+        function updateStats() {
+            const components = getComponents();
+            const borrowedItems = getBorrowedItems();
+            document.getElementById('totalComponents').textContent = components.reduce((sum, component) => sum + component.totalQuantity, 0);
+            document.getElementById('currentlyBorrowed').textContent = borrowedItems.length;
+            document.getElementById('pendingReturn').textContent = borrowedItems.filter(item => !item.returned).length;
+            document.getElementById('activeUsers').textContent = new Set(borrowedItems.map(item => item.borrower)).size;
+        }
+
+        // 更新元件表格
+        function updateComponentsTable() {
+            const components = getComponents();
+            const tbody = document.querySelector('#componentsTable tbody');
+            tbody.innerHTML = '';
+            components.forEach(component => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${component.id}</td>
+                    <td>${component.name}</td>
+                    <td>${component.totalQuantity}</td>
+                    <td>${component.availableQuantity}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 更新借出項目表格
+        function updateBorrowedItemsTable() {
+            const borrowedItems = getBorrowedItems();
+            const components = getComponents();
+            const tbody = document.querySelector('#borrowedItemsTable tbody');
+            tbody.innerHTML = '';
+            borrowedItems.filter(item => !item.returned).forEach(item => {
+                const tr = document.createElement('tr');
+                const component = components.find(c => c.id === item.componentId);
+                tr.innerHTML = `
+                    <td>${item.borrower}</td>
+                    <td>${component ? component.name : 'Unknown'}</td>
+                    <td>${item.quantity}</td>
+                    <td>${new Date(item.borrowDate).toLocaleDateString()}</td>
+                    <td><button onclick="returnComponent('${item.id}')">歸還</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 添加元件
+        function addComponent(name, quantity) {
+            const components = getComponents();
+            const newComponent = {
+                id: Date.now().toString(),
+                name,
+                totalQuantity: parseInt(quantity),
+                availableQuantity: parseInt(quantity)
+            };
+            components.push(newComponent);
+            saveComponents(components);
+            updateComponentsTable();
+            updateStats();
+        }
+
+        // 借出元件
+        function borrowComponent(borrower, componentId, quantity) {
+            const components = getComponents();
+            const borrowedItems = getBorrowedItems();
+            const component = components.find(c => c.id === componentId);
+            if (component && component.availableQuantity >= quantity) {
+                const newBorrowedItem = {
+                    id: Date.now().toString(),
+                    borrower,
+                    componentId,
+                    quantity: parseInt(quantity),
+                    borrowDate: new Date().toISOString(),
+                    returned: false
+                };
+                borrowedItems.push(newBorrowedItem);
+                component.availableQuantity -= parseInt(quantity);
+                saveComponents(components);
+                saveBorrowedItems(borrowedItems);
+                updateComponentsTable();
+                updateBorrowedItemsTable();
+                updateStats();
+            }
+        }
+
+        // 歸還元件
+        function returnComponent(borrowedItemId) {
+            const components = getComponents();
+            const borrowedItems = getBorrowedItems();
+            const borrowedItem = borrowedItems.find(item => item.id === borrowedItemId);
+            if (borrowedItem) {
+                borrowedItem.returned = true;
+                const component = components.find(c => c.id === borrowedItem.componentId);
+                if (component) {
+                    component.availableQuantity += borrowedItem.quantity;
+                }
+                saveComponents(components);
+                saveBorrowedItems(borrowedItems);
+                updateComponentsTable();
+                updateBorrowedItemsTable();
+                updateStats();
+            }
+        }
+
+        // 切換頁面
+        document.querySelectorAll('nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const sectionId = e.target.getAttribute('data-section');
+                document.querySelectorAll('.section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                document.getElementById(sectionId).classList.add('active');
+            });
+        });
+        // 初始化頁面
+        updateStats();
+        updateComponentsTable();
+        updateBorrowedItemsTable();
+
+        // 添加元件表單提交
+        document.getElementById('addComponentForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('componentName').value;
+            const quantity = document.getElementById('componentQuantity').value;
+            addComponent(name, quantity);
+            e.target.reset();
+        });
+
+        // 借出元件表單提交
+        document.getElementById('borrowForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const borrower = document.getElementById('borrower').value;
+            const componentId = document.getElementById('componentSelect').value;
+            const quantity = document.getElementById('quantity').value;
+            borrowComponent(borrower, componentId, quantity);
+            e.target.reset();
+        });
+
+        // 更新元件選擇下拉列表
+        function updateComponentSelect() {
+            const components = getComponents();
+            const select = document.getElementById('componentSelect');
+            select.innerHTML = '';
+            components.forEach(component => {
+                const option = document.createElement('option');
+                option.value = component.id;
+                option.textContent = component.name;
+                select.appendChild(option);
+            });
+        }
+
+        // 初始化元件選擇下拉列表
+        updateComponentSelect();
+    </script>
+</body>
+</html>
